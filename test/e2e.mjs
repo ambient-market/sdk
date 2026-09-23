@@ -28,6 +28,13 @@ async function directClaimLifecycle() {
     commandId: commandId("sdk-direct-create"),
     externalRef: commandId("sdk-direct"),
     subject: subject("sdk.direct-claim.v1", { title: "SDK direct claim" }),
+    fulfillment: {
+      requestSchema: "sdk.work-request.v1",
+      acceptedDeliveryTransports: ["https"],
+      providerEndpoint: { transport: "https", uri: "https://provider.example/work" },
+      outputMediaTypes: ["application/json"],
+      slaSeconds: 3_600,
+    },
     mechanism: mechanisms.directClaim({ capacity: 1 }),
   });
   const published = await creator.publishMarket(created.market.id, {
@@ -39,13 +46,28 @@ async function directClaimLifecycle() {
 
   const claimed = await first.submitDirectClaim(created.market.id, {
     commandId: commandId("sdk-direct-claim"),
+    fulfillment: {
+      request: subject("sdk.work-request.v1", { brief: "Run the integration" }),
+      deliveryEndpoint: { transport: "https", uri: "https://buyer.example/results" },
+    },
   });
   assert.equal(claimed.commitments.length, 1);
   assert.equal(claimed.commitments[0].state, "committed");
+  assert.equal(claimed.commitments[0].terms.fulfillment.spec.slaSeconds, 3_600);
+  assert.equal(
+    claimed.commitments[0].terms.fulfillment.handoff.deliveryEndpoint.uri,
+    "https://buyer.example/results",
+  );
   const outcome = await first.getMyOutcome(created.market.id);
   assert.equal(outcome.commitments[0].id, claimed.commitments[0].id);
+  const activity = await ambient.getMarketActivity(created.market.id);
+  assert.equal(JSON.stringify(activity).includes("buyer.example"), false);
   const record = await creator.getMarketRecord(created.market.id);
   assert.equal(record.integrity.stateReconstructed, true);
+  assert.equal(
+    record.commitments[0].terms.fulfillment.handoff.request.data.brief,
+    "Run the integration",
+  );
 }
 
 async function sealedAuctionLifecycle() {
@@ -156,4 +178,3 @@ async function waitFor(probe, description) {
   }
   throw new Error(`timed out waiting for ${description}`, { cause: lastError });
 }
-

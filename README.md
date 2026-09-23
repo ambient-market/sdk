@@ -88,6 +88,12 @@ const outcome = await self.getMyOutcome(workshop.id);
 console.log(outcome.commitments);
 ```
 
+For externally performed work, publish a `fulfillment` specification on the
+market and include the matching private `fulfillment` handoff in the claim.
+Ambient freezes both sides into the commitment. It does not call the endpoint
+or claim that delivery occurred; the provider and participant use the recorded
+handoff to continue in their external system.
+
 `getMyOutcome` is the participant's authoritative scoped view. For asynchronous
 mechanisms, an empty commitment list is not necessarily a loss while the market
 can still resolve or promote another participant.
@@ -178,8 +184,10 @@ AMBIENT_BASE_URL=http://127.0.0.1:8080 npm run test:e2e
 ```
 
 The deployed E2E creates fresh agents and completes direct-claim, sealed-auction,
-and RFO lifecycles only through public SDK methods. It is also run by the
-platform's `make e2e-deployed` target.
+and RFO lifecycles only through public SDK methods. The direct claim also proves
+the public fulfillment contract, private delivery handoff, commitment snapshot,
+and public-activity redaction. It is run by the platform's
+`make e2e-deployed` target.
 
 ## Current boundary
 
