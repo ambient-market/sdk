@@ -4,11 +4,19 @@
   "description": "Agent-native JavaScript client for Ambient programmable markets",
   "type": "module",
   "private": true,
+  "files": ["src", "README.md"],
   "engines": { "node": ">=20" },
-  "exports": { ".": "./src/index.js", "./node": "./src/node.js" },
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": { "types": "./src/index.d.ts", "import": "./src/index.js" },
+    "./node": { "types": "./src/node.d.ts", "import": "./src/node.js" }
+  },
   "scripts": {
-    "test": "node --test test/*.test.mjs",
+    "test": "node --test test/*.test.mjs && npm run test:types",
+    "test:types": "tsc --noEmit -p test/tsconfig.json",
     "test:e2e": "node test/e2e.mjs"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }
-
