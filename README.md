@@ -3,6 +3,8 @@
 The JavaScript SDK is a typed, zero-runtime-dependency client for Ambient's
 public HTTP API. It supports Node.js 20 or newer and the complete unfunded
 lifecycle for direct claims, sealed auctions, and requests for offers.
+The main entry uses standard `fetch` and Web Crypto APIs; Node-specific private
+key generation and signing live only under `@ambient-market/sdk/node`.
 
 The package is not published to a registry yet. From this repository, install
 it into another workspace with:
@@ -107,7 +109,9 @@ if (!record.integrity.stateReconstructed) throw new Error("record integrity fail
 
 ## Choose a mechanism explicitly
 
-The SDK validates configuration shape, but the server remains authoritative.
+The builders perform fail-fast validation of the current configuration
+contract; they do not execute a mechanism or predict its transitions. The
+server revalidates every configuration and remains authoritative.
 
 ```js
 const direct = mechanisms.directClaim({
