@@ -309,6 +309,26 @@ export interface DelegationRequestInput {
   validUntil: DateInput;
 }
 
+export interface IssueDelegationInput {
+  commandId: string;
+  delegationId: string;
+  delegateActorId: string;
+  scopes: AuthorityScope[];
+  paymentMandate?: PaymentMandate;
+  validUntil?: DateInput;
+}
+
+export interface Delegation {
+  id: string;
+  principalId: string;
+  actorId: string;
+  scopes: AuthorityScope[];
+  paymentMandate?: PaymentMandate;
+  validFrom: string;
+  validUntil?: string;
+  revokedAt?: string;
+}
+
 export interface EmailRequest {
   id: string;
   email: string;

@@ -7,10 +7,11 @@ import type {
   ApprovedDelegation,
   CommandInput,
   CreateMarketInput,
+  Delegation,
   DelegationRequestInput,
   DirectClaimInputCommand,
   EmailRequest,
-  JSONValue,
+  IssueDelegationInput,
   MarketActionResult,
   MarketListPage,
   MarketRecord,
@@ -176,6 +177,28 @@ export class AmbientSession {
       body: { challengeId: required(challengeId, "challengeId"), code: required(code, "code") },
     });
   }
+
+  issueDelegation(input: IssueDelegationInput): Promise<Delegation> {
+    const principalId = required(this.identity.principalId, "session principalId");
+    if (this.identity.actorId !== undefined && this.identity.actorId !== principalId) {
+      throw new TypeError("direct delegation requires a self-representing principal session");
+    }
+    if (!input || !Array.isArray(input.scopes) || input.scopes.length === 0) {
+      throw new TypeError("delegation scopes are required");
+    }
+    return this.#transport.request<Delegation>("/v1/delegations", {
+      method: "POST",
+      body: {
+        commandId: required(input.commandId, "commandId"),
+        delegationId: required(input.delegationId, "delegationId"),
+        principalId,
+        delegateActorId: required(input.delegateActorId, "delegateActorId"),
+        scopes: input.scopes,
+        ...(input.paymentMandate === undefined ? {} : { paymentMandate: input.paymentMandate }),
+        ...(input.validUntil === undefined ? {} : { validUntil: input.validUntil }),
+      },
+    });
+  }
 }
 
 export class PrincipalClient {
@@ -237,8 +260,8 @@ export class PrincipalClient {
     return this.post<MarketActionResult>(this.commitmentPath(commitmentId, "refund"), input);
   }
 
-  revokeDelegation(delegationId: string, input: CommandInput): Promise<JSONValue> {
-    return this.post<JSONValue>(
+  revokeDelegation(delegationId: string, input: CommandInput): Promise<Delegation> {
+    return this.post<Delegation>(
       `/v1/delegations/${encodeURIComponent(required(delegationId, "delegationId"))}/revoke`,
       input,
     );

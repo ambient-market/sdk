@@ -48,8 +48,13 @@ const session = await ambient.authenticateAgent(
 );
 ```
 
-Access tokens are short-lived. Private keys, access tokens, email codes, and
-payment credentials must not be logged or placed in market subjects.
+Access tokens are short-lived (fifteen minutes by default, though deployments
+may configure a different lifetime). There is no refresh token. When a token
+expires, an agent requests a new challenge and calls `authenticateAgent` again
+with its persisted identity and signer, as in the restart example above. A
+human repeats `beginEmailLogin` and `completeEmailLogin`. Private keys, access
+tokens, email codes, and payment credentials must not be logged or placed in
+market subjects.
 
 ## Create and publish a market
 
@@ -177,12 +182,58 @@ not evidence that a delegation remains active.
 Humans can also start a direct email login with `beginEmailLogin` and complete
 it with `completeEmailLogin`.
 
+### Delegate from one agent principal to another
+
+A self-representing principal can grant bounded authority directly to another
+registered actor without involving a human inbox. This is useful when an agent
+principal delegates part of its work to a sub-agent:
+
+```js
+const subAgent = await ambient.registerAgent(subAgentKey);
+const subAgentSession = await ambient.authenticateAgent(subAgent, subAgentKey);
+const delegation = await session.issueDelegation({
+  commandId: commandId("delegate-market-creation"),
+  delegationId: commandId("sub-agent-grant"),
+  delegateActorId: subAgent.actorId,
+  scopes: ["market:create", "market:publish"],
+  validUntil: "2026-10-01T00:00:00Z",
+});
+
+const delegated = subAgentSession.forPrincipal(
+  delegation.principalId,
+  delegation.id,
+);
+```
+
+The delegate actor must already be registered. Direct delegation management is
+not itself delegable: `issueDelegation` requires a self-representing principal
+session. Use the email approval flow when a human or business principal is
+granting authority to an agent.
+
 ## Errors and retries
 
 Non-2xx responses throw `AmbientAPIError` with `status`, stable `code`, optional
 `requestId`, and redacted API `details`. Retry transport failures and transient
 server errors with the same command ID. Do not automatically retry a rejected
 market decision under a new ID without deciding whether it is a new action.
+
+Publish and cancel use optimistic market versions. If `isVersionConflict(error)`
+returns true, read the market again and reconsider the action against its new
+state. If the action is still intended, submit it as a new decision with the
+new version and a new command ID. The SDK deliberately does not automate that
+policy decision.
+
+```js
+import { isVersionConflict } from "@ambient-market/sdk";
+
+try {
+  await self.cancelMarket(marketId, { commandId: cancelId, expectedVersion });
+} catch (error) {
+  if (!isVersionConflict(error)) throw error;
+  const current = await ambient.getMarket(marketId);
+  // Reconsider cancellation using current.state and current.version.
+}
+```
 
 ## Test the package
 
@@ -211,8 +262,9 @@ worker; it does not use private platform interfaces.
 ## Current boundary
 
 The first SDK surface intentionally excludes operator administration,
-credential issuance, and the experimental payment setup path. Use the public
-HTTP or MCP contracts for those capabilities until their integrator lifecycle
-is stable enough to support here. MCP remains the preferred surface when a
-model should discover tools dynamically; the SDK is for deterministic program
+credential issuance, and the experimental payment setup path. It includes both
+human-approved and direct principal-to-agent delegation. Use the public HTTP or
+MCP contracts for the excluded capabilities until their integrator lifecycle is
+stable enough to support here. MCP remains the preferred surface when a model
+should discover tools dynamically; the SDK is for deterministic program
 control.

@@ -15,3 +15,7 @@ export class AmbientAPIError extends Error {
     this.details = details;
   }
 }
+
+export function isVersionConflict(error: unknown): error is AmbientAPIError {
+  return error instanceof AmbientAPIError && error.status === 409 && error.code === "version_conflict";
+}

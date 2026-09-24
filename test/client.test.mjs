@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { AmbientAPIError, AmbientClient, commandId } from "../dist/index.js";
+import { AmbientAPIError, AmbientClient, commandId, isVersionConflict } from "../dist/index.js";
 
 test("binds principal authority and maps the complete unfunded market lifecycle", async () => {
   const calls = [];
@@ -89,6 +89,58 @@ test("supports human login and human-approved agent delegation without conflatin
   assert.equal(calls[3].body.code, "DELEGATION-CODE");
 });
 
+test("lets a self-representing principal issue bounded authority directly", async () => {
+  const calls = [];
+  const fetch = async (url, init) => {
+    const body = JSON.parse(init.body);
+    calls.push({ path: new URL(url).pathname, authorization: init.headers.Authorization, body });
+    return jsonResponse({
+      id: body.delegationId,
+      principalId: body.principalId,
+      actorId: body.delegateActorId,
+      scopes: body.scopes,
+      validFrom: "2026-09-24T12:00:00Z",
+      validUntil: body.validUntil,
+    }, 201);
+  };
+  const ambient = new AmbientClient({ baseURL: "https://ambient.test", fetch });
+  const session = ambient.withToken("principal-token", {
+    principalId: "principal-1", actorId: "principal-1",
+  });
+
+  const delegation = await session.issueDelegation({
+    commandId: "delegate-1",
+    delegationId: "delegation-1",
+    delegateActorId: "sub-agent-1",
+    scopes: ["market:create", "market:publish"],
+    validUntil: "2026-10-01T00:00:00Z",
+  });
+
+  assert.equal(delegation.principalId, "principal-1");
+  assert.equal(delegation.actorId, "sub-agent-1");
+  assert.deepEqual(calls, [{
+    path: "/v1/delegations",
+    authorization: "Bearer principal-token",
+    body: {
+      commandId: "delegate-1",
+      delegationId: "delegation-1",
+      principalId: "principal-1",
+      delegateActorId: "sub-agent-1",
+      scopes: ["market:create", "market:publish"],
+      validUntil: "2026-10-01T00:00:00Z",
+    },
+  }]);
+  await assert.rejects(
+    async () => ambient.withToken("actor-token", { actorId: "actor-only" }).issueDelegation({
+      commandId: "delegate-2",
+      delegationId: "delegation-2",
+      delegateActorId: "sub-agent-2",
+      scopes: ["market:create"],
+    }),
+    /session principalId is required/,
+  );
+});
+
 test("exposes stable API errors and actor-scoped command IDs", async () => {
   assert.match(commandId("claim"), /^claim-[0-9a-f-]{36}$/);
   const ambient = new AmbientClient({
@@ -104,6 +156,13 @@ test("exposes stable API errors and actor-scoped command IDs", async () => {
     (error) => error instanceof AmbientAPIError && error.status === 409 &&
       error.code === "invalid_market_transition" && error.requestId === "request-7",
   );
+  assert.equal(isVersionConflict(new AmbientAPIError("stale", {
+    status: 409, code: "version_conflict",
+  })), true);
+  assert.equal(isVersionConflict(new AmbientAPIError("closed", {
+    status: 409, code: "invalid_market_transition",
+  })), false);
+  assert.equal(isVersionConflict(new Error("version_conflict")), false);
 });
 
 function responseFor(url, method) {

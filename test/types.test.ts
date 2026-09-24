@@ -3,6 +3,8 @@ import {
   AmbientClient,
   commandId,
   mechanisms,
+  isVersionConflict,
+  type Delegation,
   type MarketResult,
 } from "@ambient-market/sdk";
 import { NodeAgentKey } from "@ambient-market/sdk/node";
@@ -25,6 +27,13 @@ async function lifecycle() {
     expectedVersion: created.market.version,
   });
   await creator.getMarketRecord(created.market.id);
+  const delegation: Delegation = await session.issueDelegation({
+    commandId: commandId("delegate"),
+    delegationId: commandId("delegation"),
+    delegateActorId: "sub-agent",
+    scopes: ["market:create"],
+  });
+  void delegation;
 }
 
 const delegated = ambient.withToken("token", { actorId: "agent" })
@@ -46,4 +55,5 @@ const error: AmbientAPIError = new AmbientAPIError("conflict", {
   status: 409, code: "conflict",
 });
 void error;
+void isVersionConflict(error);
 void lifecycle;

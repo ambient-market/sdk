@@ -7,8 +7,8 @@ const baseURL = process.env.AMBIENT_BASE_URL;
 if (!baseURL) throw new Error("AMBIENT_BASE_URL is required");
 
 const ambient = new AmbientClient({ baseURL });
-const [creatorSession, firstSession, secondSession] = await Promise.all([
-  actor(), actor(), actor(),
+const [creatorSession, firstSession, secondSession, delegateSession] = await Promise.all([
+  actor(), actor(), actor(), actor(),
 ]);
 const creator = creatorSession.principal();
 const first = firstSession.principal();
@@ -17,6 +17,7 @@ const second = secondSession.principal();
 await directClaimLifecycle();
 await sealedAuctionLifecycle();
 await requestForOffersLifecycle();
+await directDelegationLifecycle();
 console.log("Ambient JavaScript SDK completed all deployed lifecycles.");
 
 async function actor() {
@@ -158,6 +159,38 @@ async function requestForOffersLifecycle() {
   const record = await creator.getMarketRecord(created.market.id);
   assert.equal(record.privateOffers.length, 2);
   assert.equal(record.integrity.stateReconstructed, true);
+}
+
+async function directDelegationLifecycle() {
+  const delegationId = commandId("sdk-delegation");
+  const issued = await creatorSession.issueDelegation({
+    commandId: commandId("sdk-delegation-issue"),
+    delegationId,
+    delegateActorId: delegateSession.identity.actorId,
+    scopes: ["market:create", "market:publish", "market:cancel"],
+    validUntil: new Date(Date.now() + 60_000),
+  });
+  assert.equal(issued.principalId, creator.principalId);
+  assert.equal(issued.actorId, delegateSession.identity.actorId);
+
+  const delegatedCreator = delegateSession.forPrincipal(creator.principalId, delegationId);
+  const created = await delegatedCreator.createMarket({
+    commandId: commandId("sdk-delegated-create"),
+    discoverability: "unlisted",
+    subject: subject("sdk.delegated.v1", { title: "Delegated SDK market" }),
+    mechanism: mechanisms.directClaim({ capacity: 1 }),
+  });
+  const published = await delegatedCreator.publishMarket(created.market.id, {
+    commandId: commandId("sdk-delegated-publish"), expectedVersion: created.market.version,
+  });
+  assert.equal(published.market.state, "open");
+  const canceled = await delegatedCreator.cancelMarket(created.market.id, {
+    commandId: commandId("sdk-delegated-cancel"), expectedVersion: published.market.version,
+  });
+  assert.equal(canceled.market.state, "canceled");
+  await creator.revokeDelegation(delegationId, {
+    commandId: commandId("sdk-delegation-revoke"),
+  });
 }
 
 function subject(schema, data) {
