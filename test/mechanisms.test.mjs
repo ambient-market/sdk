@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { mechanisms } from "../src/index.js";
+import { mechanisms } from "../dist/index.js";
 
 test("builds explicit launch mechanism configurations without hiding market rules", () => {
   assert.deepEqual(mechanisms.directClaim({ capacity: 2, confirmation: "creator", holdDurationSeconds: 600 }), {

@@ -3,8 +3,8 @@ import { createPublicKey, verify } from "node:crypto";
 import { after, before, test } from "node:test";
 import { createServer } from "node:http";
 
-import { AmbientClient } from "../src/index.js";
-import { NodeAgentKey } from "../src/node.js";
+import { AmbientClient } from "../dist/index.js";
+import { NodeAgentKey } from "../dist/node.js";
 
 let server;
 let baseURL;
@@ -82,4 +82,3 @@ async function readJSON(request) {
   for await (const chunk of request) chunks.push(chunk);
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
-

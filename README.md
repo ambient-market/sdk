@@ -1,10 +1,12 @@
-# Ambient JavaScript SDK
+# Ambient TypeScript SDK
 
-The JavaScript SDK is a typed, zero-runtime-dependency client for Ambient's
-public HTTP API. It supports Node.js 20 or newer and the complete unfunded
-lifecycle for direct claims, sealed auctions, and requests for offers.
-The main entry uses standard `fetch` and Web Crypto APIs; Node-specific private
-key generation and signing live only under `@ambient-market/sdk/node`.
+The TypeScript SDK is a zero-runtime-dependency client for Ambient's public
+HTTP API. It is authored in strict TypeScript and ships standards-based ESM,
+generated declarations, declaration maps, and source maps. It supports Node.js
+20 or newer and the complete unfunded lifecycle for direct claims, sealed
+auctions, and requests for offers. The main entry uses standard `fetch` and Web
+Crypto APIs; Node-specific private-key generation and signing live only under
+`@ambient-market/sdk/node`.
 
 The package is not published to a registry yet. For evaluation, pin an exact
 Git commit so an upstream change cannot alter an existing installation:
@@ -198,6 +200,8 @@ worker; it does not use private platform interfaces.
 ## Compatibility and release status
 
 - Node.js 20 or newer is supported.
+- The package is authored in strict TypeScript and emits ESM JavaScript plus
+  generated declarations and source maps.
 - The main entry requires standard Fetch and Web Crypto APIs.
 - Ed25519 private-key generation and signing are available from the Node-only
   `@ambient-market/sdk/node` entry.

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { AmbientAPIError, AmbientClient, commandId } from "../src/index.js";
+import { AmbientAPIError, AmbientClient, commandId } from "../dist/index.js";
 
 test("binds principal authority and maps the complete unfunded market lifecycle", async () => {
   const calls = [];
@@ -126,4 +126,3 @@ function subject(value) {
 function directClaim() {
   return { presetId: "direct-claim.v1", config: { capacity: 1, pricing: { mode: "free" }, confirmation: "none" } };
 }
-

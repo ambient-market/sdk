@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
-import { AmbientClient, commandId, mechanisms } from "../src/index.js";
-import { NodeAgentKey } from "../src/node.js";
+import { AmbientClient, commandId, mechanisms } from "../dist/index.js";
+import { NodeAgentKey } from "../dist/node.js";
 
 const baseURL = process.env.AMBIENT_BASE_URL;
 if (!baseURL) throw new Error("AMBIENT_BASE_URL is required");

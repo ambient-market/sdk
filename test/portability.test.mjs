@@ -3,12 +3,12 @@ import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 const platformNeutralModules = [
-  "client.js",
-  "errors.js",
-  "ids.js",
-  "index.js",
-  "mechanisms.js",
-  "transport.js",
+  "client.ts",
+  "errors.ts",
+  "ids.ts",
+  "index.ts",
+  "mechanisms.ts",
+  "transport.ts",
 ];
 
 test("the main SDK entry has no Node-only module imports", async () => {

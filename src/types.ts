@@ -115,12 +115,6 @@ export interface RequestForOffersConfig {
   pricing: RequestForOffersPricing;
 }
 
-export const mechanisms: Readonly<{
-  directClaim(input: DirectClaimInput): MechanismSelection<"direct-claim.v1", DirectClaimConfig>;
-  sealedAuction(input: SealedAuctionInput): MechanismSelection<"sealed-forward-auction.v1", SealedAuctionConfig>;
-  requestForOffers(input: RequestForOffersInput): MechanismSelection<"request-for-offers.v1", RequestForOffersConfig>;
-}>;
-
 export interface CommandIdentity {
   principalId: string;
   actorId: string;
@@ -330,62 +324,9 @@ export interface AmbientClientOptions {
   accessToken?: string;
 }
 
-export class AmbientClient {
-  constructor(options: AmbientClientOptions);
-  registerAgent(signer: AgentSigner): Promise<AgentIdentity>;
-  authenticateAgent(identity: Pick<AgentIdentity, "actorId" | "keyId"> & Partial<AgentIdentity>, signer: AgentSigner): Promise<AmbientSession>;
-  registerAndAuthenticateAgent(signer: AgentSigner): Promise<AmbientSession>;
-  withToken(accessToken: string, identity?: SessionIdentity): AmbientSession;
-  beginEmailLogin(email: string): Promise<EmailRequest>;
-  completeEmailLogin(challengeId: string, code: string): Promise<AmbientSession>;
-  listMarkets(options?: { cursor?: string; limit?: number }): Promise<MarketListPage>;
-  getMarket(marketId: string): Promise<PublicMarket>;
-  getMarketActivity(marketId: string): Promise<PublicMarketActivity>;
-}
-
-export class AmbientSession {
-  readonly identity: SessionIdentity;
-  readonly grant: AccessGrant;
-  readonly accessToken: string;
-  principal(principalId?: string, authorityRef?: string): PrincipalClient;
-  forPrincipal(principalId: string, authorityRef?: string): PrincipalClient;
-  requestDelegation(input: DelegationRequestInput): Promise<EmailRequest>;
-  approveDelegation(challengeId: string, code: string): Promise<ApprovedDelegation>;
-}
-
-export class PrincipalClient {
-  readonly principalId: string;
-  readonly authorityRef?: string;
-  createMarket(input: CreateMarketInput): Promise<MarketResult>;
-  publishMarket(marketId: string, input: PublishMarketInput): Promise<MarketResult>;
-  cancelMarket(marketId: string, input: VersionedCommandInput): Promise<MarketResult>;
-  submitDirectClaim(marketId: string, input: DirectClaimInputCommand): Promise<MarketActionResult>;
-  submitSealedBid(marketId: string, input: SealedBidInput): Promise<MarketActionResult>;
-  submitOffer(marketId: string, input: SubmitOfferInput): Promise<MarketActionResult>;
-  withdrawOffer(marketId: string, input: WithdrawOfferInput): Promise<MarketActionResult>;
-  selectOffers(marketId: string, input: SelectOffersInput): Promise<MarketActionResult>;
-  confirmCommitment(commitmentId: string, input: CommandInput): Promise<MarketActionResult>;
-  declineCommitment(commitmentId: string, input: CommandInput): Promise<MarketActionResult>;
-  refundCommitment(commitmentId: string, input: CommandInput): Promise<MarketActionResult>;
-  revokeDelegation(delegationId: string, input: CommandInput): Promise<JSONValue>;
-  getOffers(marketId: string): Promise<RequestForOffersView>;
-  getMyOutcome(marketId: string): Promise<ParticipantOutcome>;
-  getMarketRecord(marketId: string): Promise<MarketRecord>;
-}
-
 export interface AmbientAPIErrorOptions {
   status?: number;
   code?: string;
   requestId?: string;
   details?: unknown;
 }
-
-export class AmbientAPIError extends Error {
-  constructor(message: string, options?: AmbientAPIErrorOptions);
-  readonly status?: number;
-  readonly code?: string;
-  readonly requestId?: string;
-  readonly details?: unknown;
-}
-
-export function commandId(prefix?: string): string;
