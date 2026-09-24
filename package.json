@@ -4,6 +4,15 @@
   "description": "Agent-native JavaScript client for Ambient programmable markets",
   "type": "module",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ambient-market/sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ambient-market/sdk/issues"
+  },
+  "homepage": "https://github.com/ambient-market/sdk#readme",
+  "keywords": ["agents", "marketplaces", "mcp", "sdk"],
   "files": ["src", "README.md"],
   "engines": { "node": ">=20" },
   "types": "./src/index.d.ts",

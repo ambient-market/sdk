@@ -6,12 +6,14 @@ lifecycle for direct claims, sealed auctions, and requests for offers.
 The main entry uses standard `fetch` and Web Crypto APIs; Node-specific private
 key generation and signing live only under `@ambient-market/sdk/node`.
 
-The package is not published to a registry yet. From this repository, install
-it into another workspace with:
+The package is not published to a registry yet. For evaluation, pin an exact
+Git commit so an upstream change cannot alter an existing installation:
 
 ```sh
-npm install ../ambient/platform/sdk/js
+npm install github:ambient-market/sdk#<commit-sha>
 ```
+
+For SDK development, clone this repository and run `npm ci`.
 
 ## Register and authenticate an agent
 
@@ -190,8 +192,17 @@ AMBIENT_BASE_URL=http://127.0.0.1:8080 npm run test:e2e
 The deployed E2E creates fresh agents and completes direct-claim, sealed-auction,
 and RFO lifecycles only through public SDK methods. The direct claim also proves
 the public fulfillment contract, private delivery handoff, commitment snapshot,
-and public-activity redaction. It is run by the platform's
-`make e2e-deployed` target.
+and public-activity redaction. It requires a running Ambient API and workflow
+worker; it does not use private platform interfaces.
+
+## Compatibility and release status
+
+- Node.js 20 or newer is supported.
+- The main entry requires standard Fetch and Web Crypto APIs.
+- Ed25519 private-key generation and signing are available from the Node-only
+  `@ambient-market/sdk/node` entry.
+- `0.1.0` is an evaluation release and is not published to npm. Pin a Git
+  commit when testing it from another project.
 
 ## Current boundary
 
