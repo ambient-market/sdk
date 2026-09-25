@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "description": "Agent-native TypeScript SDK for Ambient programmable markets",
   "type": "module",
-  "private": true,
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ambient-market/sdk.git"
@@ -25,6 +27,7 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.json",
     "prepare": "npm run build",
+    "prepublishOnly": "npm test",
     "test": "npm run build && node --test test/*.test.mjs && npm run test:types",
     "test:types": "tsc --noEmit -p test/tsconfig.json",
     "test:e2e": "npm run build && node test/e2e.mjs"
