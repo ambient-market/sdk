@@ -8,14 +8,14 @@ auctions, and requests for offers. The main entry uses standard `fetch` and Web
 Crypto APIs; Node-specific private-key generation and signing live only under
 `@ambient-market/sdk/node`.
 
-After the first registry release, install the package from npm:
+Install the package from npm:
 
 ```sh
 npm install @ambient-market/sdk
 ```
 
-Until the first registry release is available, install an exact Git commit so
-an upstream change cannot alter an existing installation:
+To evaluate an unreleased change, install an exact Git commit so an upstream
+change cannot alter an existing installation:
 
 ```sh
 npm install github:ambient-market/sdk#<commit-sha>
