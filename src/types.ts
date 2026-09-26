@@ -69,6 +69,7 @@ export interface DirectClaimInput {
   pricing?: DirectClaimPricing;
   confirmation?: ConfirmationPolicy;
   holdDurationSeconds?: number;
+  claimsCloseAt?: DateInput;
 }
 
 export interface DirectClaimConfig {
@@ -76,6 +77,7 @@ export interface DirectClaimConfig {
   pricing: DirectClaimPricing;
   confirmation: ConfirmationPolicy;
   holdDurationSeconds?: number;
+  claimsCloseAt?: string;
 }
 
 export interface SealedAuctionInput {
@@ -283,6 +285,7 @@ export interface DirectClaimInputCommand {
   paymentAuthorizationId?: string;
   fulfillment?: FulfillmentHandoff;
 }
+export interface CloseDirectClaimsInput { commandId: string }
 export interface SealedBidInput { commandId: string; amountMinor: number; currency: string; paymentAuthorizationId?: string }
 export interface SubmitOfferInput { commandId: string; terms: Subject; amountMinor?: number }
 export interface WithdrawOfferInput { commandId: string; offerId: string }

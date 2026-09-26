@@ -30,6 +30,7 @@ test("binds principal authority and maps the complete unfunded market lifecycle"
   await principal.publishMarket("market/1", { commandId: "publish-1", expectedVersion: 1 });
   await principal.cancelMarket("market/1", { commandId: "cancel-1", expectedVersion: 2 });
   await principal.submitDirectClaim("market/1", { commandId: "claim-1" });
+  await principal.closeDirectClaims("market/1", { commandId: "close-claims-1" });
   await principal.submitSealedBid("market/1", { commandId: "bid-1", amountMinor: 5000, currency: "USD" });
   await principal.submitOffer("market/1", { commandId: "offer-1", terms: subject("offer"), amountMinor: 4200 });
   await principal.getOffers("market/1");
@@ -49,6 +50,7 @@ test("binds principal authority and maps the complete unfunded market lifecycle"
     ["/v1/markets/market%2F1/publish", "POST"],
     ["/v1/markets/market%2F1/cancel", "POST"],
     ["/v1/markets/market%2F1/direct-claims", "POST"],
+    ["/v1/markets/market%2F1/claim-closures", "POST"],
     ["/v1/markets/market%2F1/sealed-bids", "POST"],
     ["/v1/markets/market%2F1/offers", "POST"],
     ["/v1/markets/market%2F1/offers?principalId=business-1&authorityRef=delegation-1", "GET"],

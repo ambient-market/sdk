@@ -131,6 +131,7 @@ server revalidates every configuration and remains authoritative.
 ```js
 const direct = mechanisms.directClaim({
   capacity: 2,
+  claimsCloseAt: new Date(Date.now() + 60_000),
   confirmation: "creator",
   holdDurationSeconds: 900,
   pricing: { mode: "posted", amountMinor: 5_000, currency: "USD" },
@@ -150,6 +151,11 @@ const request = mechanisms.requestForOffers({
   pricing: { mode: "required", currency: "USD", maximumAmountMinor: 100_000 },
 });
 ```
+
+`claimsCloseAt` is optional. When present, the server rejects claims at or
+after that instant and closes the market through its durable worker. A creator
+can stop claims earlier with `closeDirectClaims`; accepted commitments remain
+in force.
 
 Auction participants call `submitSealedBid`, then poll `getMyOutcome` after the
 close. RFO providers call `submitOffer`; the creator calls `getOffers` after the

@@ -10,6 +10,7 @@ import type {
   Delegation,
   DelegationRequestInput,
   DirectClaimInputCommand,
+  CloseDirectClaimsInput,
   EmailRequest,
   IssueDelegationInput,
   MarketActionResult,
@@ -230,6 +231,10 @@ export class PrincipalClient {
 
   submitDirectClaim(marketId: string, input: DirectClaimInputCommand): Promise<MarketActionResult> {
     return this.post<MarketActionResult>(this.marketPath(marketId, "direct-claims"), input);
+  }
+
+  closeDirectClaims(marketId: string, input: CloseDirectClaimsInput): Promise<MarketActionResult> {
+    return this.post<MarketActionResult>(this.marketPath(marketId, "claim-closures"), input);
   }
 
   submitSealedBid(marketId: string, input: SealedBidInput): Promise<MarketActionResult> {

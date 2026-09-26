@@ -8,6 +8,10 @@ test("builds explicit launch mechanism configurations without hiding market rule
     presetId: "direct-claim.v1",
     config: { capacity: 2, pricing: { mode: "free" }, confirmation: "creator", holdDurationSeconds: 600 },
   });
+  assert.deepEqual(mechanisms.directClaim({ capacity: 2, claimsCloseAt: "2026-10-02T20:00:00Z" }), {
+    presetId: "direct-claim.v1",
+    config: { capacity: 2, pricing: { mode: "free" }, confirmation: "none", claimsCloseAt: "2026-10-02T20:00:00.000Z" },
+  });
   assert.deepEqual(mechanisms.sealedAuction({
     currency: "USD", reserveAmountMinor: 5000,
     closesAt: "2026-10-02T20:00:00Z", holdDurationSeconds: 600,

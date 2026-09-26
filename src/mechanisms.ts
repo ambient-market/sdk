@@ -39,6 +39,7 @@ export const mechanisms = Object.freeze({
       confirmation: confirmation as ConfirmationPolicy,
     };
     if (input.holdDurationSeconds !== undefined) config.holdDurationSeconds = input.holdDurationSeconds;
+    if (input.claimsCloseAt !== undefined) config.claimsCloseAt = dateTime(input.claimsCloseAt, "claimsCloseAt");
     return { presetId: "direct-claim.v1", config };
   },
 
