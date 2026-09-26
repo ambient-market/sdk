@@ -41,7 +41,10 @@ export class HTTPTransport {
     const headers: Record<string, string> = { Accept: "application/json" };
     if (this.accessToken) headers.Authorization = `Bearer ${this.accessToken}`;
     if (body !== undefined) headers["Content-Type"] = "application/json";
-    const response = await this.fetch(`${this.baseURL}${path}`, {
+    // Browser-native fetch is a Web IDL method. Calling it as
+    // `this.fetch(...)` supplies HTTPTransport as the receiver and Chrome
+    // rejects the invocation before sending a request.
+    const response = await this.fetch.call(globalThis, `${this.baseURL}${path}`, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),

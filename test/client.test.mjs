@@ -3,6 +3,16 @@ import { test } from "node:test";
 
 import { AmbientAPIError, AmbientClient, commandId, isVersionConflict } from "../dist/index.js";
 
+test("invokes fetch with the browser global receiver", async () => {
+  async function browserFetch() {
+    assert.equal(this, globalThis);
+    return jsonResponse({ items: [] });
+  }
+
+  const ambient = new AmbientClient({ baseURL: "https://ambient.test", fetch: browserFetch });
+  await assert.doesNotReject(() => ambient.listMarkets());
+});
+
 test("binds principal authority and maps the complete unfunded market lifecycle", async () => {
   const calls = [];
   const fetch = async (url, init) => {
