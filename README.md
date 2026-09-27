@@ -65,7 +65,7 @@ market subjects.
 
 ## OAuth connections
 
-Use Ambient's OAuth browser connection when a person approves a registered
+Use Ambient's OAuth browser connection when a person approves an
 application to act on their behalf. See the
 [OAuth integration guide](https://docs.ambient.market/oauth-connections)
 for client registration, email login, and scoped consent. Key-based onboarding
