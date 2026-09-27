@@ -55,12 +55,40 @@ const session = await ambient.authenticateAgent(
 ```
 
 Access tokens are short-lived (fifteen minutes by default, though deployments
-may configure a different lifetime). There is no refresh token. When a token
-expires, an agent requests a new challenge and calls `authenticateAgent` again
+may configure a different lifetime). These key-proof and email API flows do
+not issue refresh tokens. When a token expires, an agent requests a new
+challenge and calls `authenticateAgent` again
 with its persisted identity and signer, as in the restart example above. A
 human repeats `beginEmailLogin` and `completeEmailLogin`. Private keys, access
 tokens, email codes, and payment credentials must not be logged or placed in
 market subjects.
+
+## OAuth connections
+
+Use Ambient's OAuth browser connection when a person approves a registered
+application to act on their behalf. See the
+[OAuth integration guide](https://docs.ambient.market/oauth-connections)
+for client registration, email login, and scoped consent. Key-based onboarding
+above remains an alternative.
+
+The SDK does not perform OAuth discovery, browser consent, callback handling,
+code exchange, token refresh, or disconnect. An application that completes
+that flow can pass the access token to `withToken`. Bind the exact principal
+and grant returned by the MCP runtime's `get_actor_context` or
+`get_market_creation_guide`:
+
+```js
+// Values come from the approved connection, not an invented identity
+// or decoded opaque token.
+const oauthSession = ambient.withToken(accessToken);
+const represented = oauthSession.forPrincipal(principalId, authorityRef);
+```
+
+Do not call `principal()` without the approved grant or treat the connection
+actor as the person. Token renewal belongs to the connecting application; the
+SDK does not store or rotate refresh tokens. A fresh OAuth connection creates
+a new actor/grant, so recover an uncertain market outcome before resubmitting
+under that connection. Market command IDs are actor-scoped.
 
 ## Create and publish a market
 
@@ -268,8 +296,8 @@ worker; it does not use private platform interfaces.
 - The main entry requires standard Fetch and Web Crypto APIs.
 - Ed25519 private-key generation and signing are available from the Node-only
   `@ambient-market/sdk/node` entry.
-- `0.1.0` is an evaluation release and is not published to npm. Pin a Git
-  commit when testing it from another project.
+- `0.1.1` is the developer-preview release. Pin a version or Git commit for
+  reproducible integrations; the OAuth client lifecycle is not included.
 
 ## Current boundary
 
