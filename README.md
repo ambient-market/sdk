@@ -191,6 +191,65 @@ offer deadline and `selectOffers` before the selection deadline. Participants
 use `getMyOutcome` in both mechanisms rather than reading competitors' private
 inputs.
 
+## Lottery entry and creator review
+
+Lottery support in this source revision is not yet in the published `0.1.1`
+package, and the platform lottery deployment is pending. It is deliberately
+unfunded: prize payment, X verification, and one-person uniqueness are not part
+of this feature. One active entry per principal is the rule.
+
+```js
+const entryClosesAt = new Date(Date.now() + 60_000);
+const lottery = mechanisms.lottery({
+  capacity: 1,
+  entryClosesAt,
+  confirmation: "creator",
+  confirmationWindowSeconds: 600,
+  resolutionDeadline: new Date(entryClosesAt.getTime() + 3_600_000),
+  eligibilityTerms: "Reply to the announced post before entries close.",
+});
+// Pass lottery as createMarket's mechanism, then publish the returned draft.
+
+await entrant.enterLottery(marketId, {
+  commandId: commandId("enter"),
+  evidenceUrl: "https://x.com/example/status/123",
+});
+const own = await entrant.getMyOutcome(marketId);
+const activeEntry = own.lotteryEntries?.find(entry => entry.state === "active");
+// Optional, before close:
+// await entrant.withdrawLotteryEntry(marketId, {
+//   commandId: commandId("withdraw"), entryId: activeEntry.id,
+// });
+
+// After the worker draws, the creator discovers provisional winners:
+const review = await creator.getLotteryReview(marketId);
+const candidate = review.candidates.find(
+  item => item.commitment.state === "awaiting_confirmations",
+);
+// After checking that candidate's evidence against the published conditions:
+// await creator.confirmCommitment(candidate.commitment.id, { commandId: commandId("confirm") });
+// Or decline with an explicit reason; this promotes the next original alternate:
+// await creator.declineCommitment(candidate.commitment.id, {
+//   commandId: commandId("decline"), reason: "Reply was made after the published cutoff",
+// });
+```
+
+Use `confirmation: "none"` (the builder default) for immediate awards, omitting
+both review fields. The SDK does not draw, reroll, decide eligibility, or choose
+who wins. Creator silence expires the slot without promotion.
+
+Entry, withdrawal and own-outcome reads require `market:lottery_enter`;
+candidate review/confirmation needs creator `commitment:confirm`, and decline
+needs `commitment:decline`. Bind the represented principal and its delegation
+once using `forPrincipal`. An OAuth connection must explicitly consent to its
+entry scope; an existing claim scope does not grant lottery participation.
+
+`lotteryEntries` contains only the caller's entry history, including withdrawals.
+Active means not withdrawn, not a win. Empty commitments are not a final loss
+while promotion remains possible. Review shows already selected candidates only;
+the seed and alternate order appear solely in the creator-authorized audit record.
+The audit record proves reproducibility, not independently verified randomness.
+
 ## Act for a human or business
 
 An authenticated agent may request a purpose-bound delegation approval by
@@ -283,7 +342,11 @@ AMBIENT_BASE_URL=http://127.0.0.1:8080 npm run test:e2e
 ```
 
 The deployed E2E creates fresh agents and completes direct-claim, sealed-auction,
-and RFO lifecycles only through public SDK methods. The direct claim also proves
+RFO and lottery lifecycles only through public SDK methods. Lottery covers
+entry replay, duplicate rejection, withdrawal/re-entry, candidate privacy,
+reasoned decline/promotion, confirmation and creator audit. It also tests the
+lottery principal rule across self/delegated actors and revoked read authority.
+The direct claim proves
 the public fulfillment contract, private delivery handoff, commitment snapshot,
 and public-activity redaction. It requires a running Ambient API and workflow
 worker; it does not use private platform interfaces.

@@ -17,6 +17,7 @@ const second = secondSession.principal();
 await directClaimLifecycle();
 await sealedAuctionLifecycle();
 await requestForOffersLifecycle();
+await lotteryLifecycle();
 await directDelegationLifecycle();
 console.log("Ambient JavaScript SDK completed all deployed lifecycles.");
 
@@ -191,6 +192,80 @@ async function directDelegationLifecycle() {
   await creator.revokeDelegation(delegationId, {
     commandId: commandId("sdk-delegation-revoke"),
   });
+}
+
+async function lotteryLifecycle() {
+  const grant = await firstSession.issueDelegation({
+    commandId: commandId("sdk-lottery-delegate"),
+    delegationId: commandId("sdk-lottery-grant"),
+    delegateActorId: delegateSession.identity.actorId,
+    scopes: ["market:lottery_enter"],
+    validUntil: new Date(Date.now() + 120_000),
+  });
+  const delegatedEntrant = delegateSession.forPrincipal(first.principalId, grant.id);
+  const entryClosesAt = new Date(Date.now() + 6_000);
+  const created = await creator.createMarket({
+    commandId: commandId("sdk-lottery-create"),
+    subject: subject("sdk.giveaway.v1", { title: "SDK lottery", prize: "External prize" }),
+    mechanism: mechanisms.lottery({
+      capacity: 1, entryClosesAt, confirmation: "creator",
+      confirmationWindowSeconds: 30,
+      resolutionDeadline: new Date(entryClosesAt.getTime() + 60_000),
+      eligibilityTerms: "Reply before entry close; creator checks selected candidates.",
+    }),
+  });
+  const id = created.market.id;
+  await creator.publishMarket(id, {
+    commandId: commandId("sdk-lottery-publish"), expectedVersion: created.market.version,
+  });
+  const input = { commandId: commandId("sdk-enter"), evidenceUrl: "https://x.com/one/status/1" };
+  const entered = await delegatedEntrant.enterLottery(id, input);
+  const replay = await delegatedEntrant.enterLottery(id, input);
+  assert.equal(replay.market.version, entered.market.version);
+  await assert.rejects(first.enterLottery(id, { commandId: commandId("sdk-duplicate") }),
+    error => error.status === 409);
+  const ownEntry = (await delegatedEntrant.getMyOutcome(id)).lotteryEntries[0];
+  assert.equal(ownEntry.evidenceUrl, input.evidenceUrl);
+  await delegatedEntrant.withdrawLotteryEntry(id, { commandId: commandId("sdk-withdraw"), entryId: ownEntry.id });
+  await delegatedEntrant.enterLottery(id, { ...input, commandId: commandId("sdk-reenter") });
+  await second.enterLottery(id, { commandId: commandId("sdk-enter"), evidenceUrl: "https://x.com/two/status/2" });
+  const history = (await first.getMyOutcome(id)).lotteryEntries;
+  assert.equal(history.length, 2);
+  assert.deepEqual(history.map(e => e.state).sort(), ["active", "withdrawn"]);
+  await assert.rejects(first.getLotteryReview(id), error => error.status === 403);
+
+  const review = await waitFor(async () => {
+    const view = await creator.getLotteryReview(id);
+    return view.candidates.length === 1 ? view : undefined;
+  }, "lottery draw");
+  const candidate = review.candidates[0];
+  assert.equal(candidate.commitment.state, "awaiting_confirmations");
+  assert(candidate.entry.evidenceUrl);
+  assert.equal(JSON.stringify(review).includes('"seed"'), false);
+  await assert.rejects(creator.declineCommitment(candidate.commitment.id, { commandId: commandId("sdk-no-reason") }),
+    error => error.status === 400);
+  await creator.declineCommitment(candidate.commitment.id, {
+    commandId: commandId("sdk-decline"), reason: "Reply did not meet the published terms",
+  });
+  const promoted = (await creator.getLotteryReview(id)).candidates.find(c => c.commitment.state === "awaiting_confirmations");
+  assert(promoted);
+  assert.notEqual(promoted.commitment.participantPrincipalId, candidate.commitment.participantPrincipalId);
+  await creator.confirmCommitment(promoted.commitment.id, { commandId: commandId("sdk-confirm") });
+
+  for (const participant of [first, second]) {
+    const own = await participant.getMyOutcome(id);
+    assert.equal(own.market.state, "closed");
+    assert.equal(own.commitments.length, 1);
+    assert.equal(own.commitments[0].participantPrincipalId, participant.principalId);
+    assert.equal(own.commitments[0].state,
+      participant.principalId === promoted.commitment.participantPrincipalId ? "committed" : "declined");
+  }
+  const record = await creator.getMarketRecord(id);
+  assert.equal(record.integrity.stateReconstructed, true);
+  assert.equal(record.privateLotteryEntries.length, 3);
+  assert.equal(record.privateLotteryDraw.orderedEntryIds.length, 2);
+  await first.revokeDelegation(grant.id, { commandId: commandId("sdk-lottery-revoke") });
+  await assert.rejects(delegatedEntrant.getMyOutcome(id), error => error.status === 403);
 }
 
 function subject(schema, data) {

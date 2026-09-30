@@ -117,6 +117,46 @@ export interface RequestForOffersConfig {
   pricing: RequestForOffersPricing;
 }
 
+type LotterySettings<TDate> = {
+  capacity: number;
+  entryClosesAt: TDate;
+  /** Described conditions for creator review; not evaluated by the SDK or kernel. */
+  eligibilityTerms?: string;
+} & (
+  | { confirmation?: "none"; confirmationWindowSeconds?: never; resolutionDeadline?: never }
+  | { confirmation: "creator"; confirmationWindowSeconds: number; resolutionDeadline: TDate }
+);
+export type LotteryInput = LotterySettings<DateInput>;
+export type LotteryConfig = LotterySettings<string> & { confirmation: "none" | "creator" };
+
+export interface LotteryEntryView {
+  id: string;
+  evidenceUrl?: string;
+  /** Active means not withdrawn, not that this entry won. */
+  state: "active" | "withdrawn";
+  submittedAt: string;
+  updatedAt: string;
+}
+
+export interface LotteryReviewView {
+  market: PublicMarket;
+  /** Only already selected candidates, including completed reviews. */
+  candidates: Array<{ entry: LotteryEntryView; commitment: Commitment }>;
+}
+
+export interface LotteryDraw {
+  algorithm: string;
+  seed: string;
+  entrySetDigest: string;
+  orderedEntryIds: string[];
+}
+
+export interface PrivateLotteryEntry extends LotteryEntryView {
+  marketId: string;
+  marketVersion: number;
+  identity: CommandIdentity;
+}
+
 export interface CommandIdentity {
   principalId: string;
   actorId: string;
@@ -237,6 +277,8 @@ export interface PublicMarketActivity {
 }
 
 export interface ParticipantOutcome {
+  /** Own entry history. An empty commitment list is not a final loss before resolution. */
+  lotteryEntries?: LotteryEntryView[];
   market: PublicMarket;
   bidReceipts: BidReceipt[];
   offers: Array<{ id: string; state: OfferState; submittedAt: string; updatedAt: string }>;
@@ -259,6 +301,9 @@ export interface RequestForOffersView {
 }
 
 export interface MarketRecord {
+  /** Creator-only audit material, never returned by candidate review or own outcome. */
+  privateLotteryEntries?: PrivateLotteryEntry[];
+  privateLotteryDraw?: LotteryDraw;
   market: Market;
   commands: JSONValue[];
   commitments: Commitment[];
@@ -291,8 +336,15 @@ export interface SubmitOfferInput { commandId: string; terms: Subject; amountMin
 export interface WithdrawOfferInput { commandId: string; offerId: string }
 export interface SelectOffersInput { commandId: string; offerIds: string[] }
 export interface CommandInput { commandId: string }
+export interface EnterLotteryInput extends CommandInput { evidenceUrl?: string }
+export interface WithdrawLotteryEntryInput extends CommandInput { entryId: string }
+export interface DeclineCommitmentInput extends CommandInput {
+  /** Required for lottery creator review; optional for other presets. */
+  reason?: string;
+}
 
 export type AuthorityScope =
+  | "market:lottery_enter"
   | "market:create" | "market:publish" | "market:cancel" | "market:claim" | "market:bid"
   | "market:offer_submit" | "market:offer_select" | "commitment:confirm" | "commitment:decline"
   | "commitment:refund" | "credential:issue" | "payment:authorize" | "payment:register_payee_rail";

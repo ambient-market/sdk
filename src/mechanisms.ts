@@ -1,5 +1,7 @@
 import type {
   ConfirmationPolicy,
+  LotteryInput,
+  LotteryConfig,
   DateInput,
   DirectClaimConfig,
   DirectClaimInput,
@@ -16,6 +18,27 @@ const confirmationPolicies: ReadonlySet<string> = new Set(["none", "creator", "p
 const pricingModes: ReadonlySet<string> = new Set(["none", "optional", "required"]);
 
 export const mechanisms = Object.freeze({
+  lottery(input: LotteryInput): MechanismSelection<"lottery.v1", LotteryConfig> {
+    requirePositiveInteger(input?.capacity, "capacity");
+    if (input.capacity > 0xffffffff) throw new TypeError("capacity must fit uint32");
+    const entryClosesAt = dateTime(input.entryClosesAt, "entryClosesAt");
+    const confirmation = input.confirmation ?? "none";
+    if (confirmation !== "none" && confirmation !== "creator") throw new TypeError("lottery confirmation must be none or creator");
+    if (input.eligibilityTerms !== undefined && typeof input.eligibilityTerms !== "string") throw new TypeError("eligibilityTerms must be text");
+    const eligibilityTerms = input.eligibilityTerms?.trim();
+    if (eligibilityTerms && new TextEncoder().encode(eligibilityTerms).length > 8192) throw new TypeError("eligibilityTerms exceeds 8192 bytes");
+    const common = { capacity: input.capacity, entryClosesAt, ...(eligibilityTerms ? { eligibilityTerms } : {}) };
+    if (confirmation === "none") {
+      if (input.confirmationWindowSeconds !== undefined || input.resolutionDeadline !== undefined) throw new TypeError("immediate lottery forbids review window and resolutionDeadline");
+      return { presetId: "lottery.v1", config: { ...common, confirmation: "none" } };
+    }
+    requirePositiveInteger(input.confirmationWindowSeconds, "confirmationWindowSeconds");
+    if (input.confirmationWindowSeconds > 0xffffffff) throw new TypeError("confirmationWindowSeconds must fit uint32");
+    const resolutionDeadline = dateTime(input.resolutionDeadline ?? "", "resolutionDeadline");
+    if (Date.parse(resolutionDeadline) <= Date.parse(entryClosesAt)) throw new TypeError("resolutionDeadline must be after entryClosesAt");
+    return { presetId: "lottery.v1", config: { ...common, confirmation: "creator", confirmationWindowSeconds: input.confirmationWindowSeconds, resolutionDeadline } };
+  },
+
   directClaim(input: DirectClaimInput): MechanismSelection<"direct-claim.v1", DirectClaimConfig> {
     requireInput(input);
     requirePositiveInteger(input.capacity, "capacity");

@@ -6,6 +6,10 @@ import type {
   AmbientClientOptions,
   ApprovedDelegation,
   CommandInput,
+  DeclineCommitmentInput,
+  EnterLotteryInput,
+  WithdrawLotteryEntryInput,
+  LotteryReviewView,
   CreateMarketInput,
   Delegation,
   DelegationRequestInput,
@@ -257,7 +261,7 @@ export class PrincipalClient {
     return this.post<MarketActionResult>(this.commitmentPath(commitmentId, "confirm"), input);
   }
 
-  declineCommitment(commitmentId: string, input: CommandInput): Promise<MarketActionResult> {
+  declineCommitment(commitmentId: string, input: DeclineCommitmentInput): Promise<MarketActionResult> {
     return this.post<MarketActionResult>(this.commitmentPath(commitmentId, "decline"), input);
   }
 
@@ -274,6 +278,18 @@ export class PrincipalClient {
 
   getOffers(marketId: string): Promise<RequestForOffersView> {
     return this.#transport.request<RequestForOffersView>(this.readPath(this.marketPath(marketId, "offers")));
+  }
+
+  enterLottery(marketId: string, input: EnterLotteryInput): Promise<MarketActionResult> {
+    return this.post<MarketActionResult>(this.marketPath(marketId, "lottery-entries"), input);
+  }
+
+  withdrawLotteryEntry(marketId: string, input: WithdrawLotteryEntryInput): Promise<MarketActionResult> {
+    return this.post<MarketActionResult>(this.marketPath(marketId, "lottery-withdrawals"), input);
+  }
+
+  getLotteryReview(marketId: string): Promise<LotteryReviewView> {
+    return this.#transport.request<LotteryReviewView>(this.readPath(this.marketPath(marketId, "lottery-review")));
   }
 
   getMyOutcome(marketId: string): Promise<ParticipantOutcome> {

@@ -57,3 +57,30 @@ const error: AmbientAPIError = new AmbientAPIError("conflict", {
 void error;
 void isVersionConflict(error);
 void lifecycle;
+const lottery = mechanisms.lottery({
+  capacity: 1, entryClosesAt: new Date(), confirmation: "creator",
+  confirmationWindowSeconds: 600, resolutionDeadline: new Date(),
+});
+lottery.presetId satisfies "lottery.v1";
+// @ts-expect-error Creator review needs a bounded review window and hard deadline.
+mechanisms.lottery({ capacity: 1, entryClosesAt: new Date(), confirmation: "creator" });
+// @ts-expect-error Immediate awards have no review window.
+mechanisms.lottery({ capacity: 1, entryClosesAt: new Date(), confirmation: "none", confirmationWindowSeconds: 600 });
+// @ts-expect-error Participants cannot select or submit a draw seed.
+void delegated.enterLottery("market", { commandId: "enter", seed: "chosen" });
+void delegated.enterLottery("market", { commandId: "enter", evidenceUrl: "https://x.com/a/status/1" });
+void delegated.withdrawLotteryEntry("market", { commandId: "withdraw", entryId: "entry" });
+void delegated.declineCommitment("commitment", { commandId: "decline", reason: "Conditions not met" });
+void delegated.getLotteryReview("market").then((view) => {
+  view.candidates[0]?.entry.evidenceUrl satisfies string | undefined;
+  // @ts-expect-error Operational review does not expose draw material.
+  view.seed;
+  // @ts-expect-error Entry view excludes the actor/delegation.
+  view.candidates[0]?.entry.identity;
+});
+void delegated.getMyOutcome("market").then((view) => {
+  view.lotteryEntries?.[0]?.state satisfies "active" | "withdrawn" | undefined;
+});
+void delegated.getMarketRecord("market").then((record) => {
+  record.privateLotteryDraw?.orderedEntryIds satisfies string[] | undefined;
+});
