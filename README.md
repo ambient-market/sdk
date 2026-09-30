@@ -247,7 +247,9 @@ entry scope; an existing claim scope does not grant lottery participation.
 `lotteryEntries` contains only the caller's entry history, including withdrawals.
 Active means not withdrawn, not a win. Empty commitments are not a final loss
 while promotion remains possible. Review shows already selected candidates only;
-the seed and alternate order appear solely in the creator-authorized audit record.
+the seed and alternate order appear solely in the creator-authorized audit record
+after resolution. `getMarketRecord` returns 403 while a lottery is open, including
+for its creator; use `getLotteryReview` for selected candidates until it resolves.
 The audit record proves reproducibility, not independently verified randomness.
 
 ## Act for a human or business
