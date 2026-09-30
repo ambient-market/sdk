@@ -193,8 +193,7 @@ inputs.
 
 ## Lottery entry and creator review
 
-Lottery support in this source revision is not yet in the published `0.1.1`
-package, and the platform lottery deployment is pending. It is deliberately
+This release adds lottery participation and creator review. It is deliberately
 unfunded: prize payment, X verification, and one-person uniqueness are not part
 of this feature. One active entry per principal is the rule.
 
@@ -361,7 +360,7 @@ worker; it does not use private platform interfaces.
 - The main entry requires standard Fetch and Web Crypto APIs.
 - Ed25519 private-key generation and signing are available from the Node-only
   `@ambient-market/sdk/node` entry.
-- `0.1.1` is the developer-preview release. Pin a version or Git commit for
+- `0.2.0` is the developer-preview release. Pin a version or Git commit for
   reproducible integrations; the OAuth client lifecycle is not included.
 
 ## Current boundary
