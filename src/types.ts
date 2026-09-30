@@ -163,6 +163,13 @@ export interface CommandIdentity {
   authorityRef?: string;
 }
 
+/** Creator actor/delegation metadata is redacted in lottery action responses. */
+export interface MarketCreator {
+  principalId: string;
+  actorId?: string;
+  authorityRef?: string;
+}
+
 export interface PaymentCredentialInstruction {
   railId: string;
   credentialType: string;
@@ -175,7 +182,7 @@ export interface Market {
   discoverability: "listed" | "unlisted";
   version: number;
   state: "draft" | "open" | "closed" | "canceled";
-  creator: CommandIdentity;
+  creator: MarketCreator;
   subject: Subject;
   fulfillment?: FulfillmentSpec;
   mechanism: MechanismSelection<string, Record<string, JSONValue>>;
